@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { Share2, Plus, Trash2 } from 'lucide-react';
-import { useSearchParams } from 'next/navigation';
-import { Suspense, useState, useEffect } from 'react';
-import { Meeting } from '@/types/meeting';
+import { Share2, Plus, Trash2 } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useState, useEffect } from "react";
+import { Meeting } from "@/types/meeting";
 
 // Wrap the `SimpleScheduler` component with a Suspense boundary
 export default function App() {
@@ -25,36 +25,43 @@ interface ErrorResponse {
 
 const SimpleScheduler = () => {
   const searchParams = useSearchParams();
-  const [userName, setUserName] = useState('');
-  const [showNamePrompt, setShowNamePrompt] = useState(true);
+  const [userName, setUserName] = useState("");
+  const [isEditingName, setIsEditingName] = useState(false);
   const [title, setTitle] = useState("Team Meeting");
   const [times, setTimes] = useState<{ [key: string]: string[] }>({});
-  const [newTimeInput, setNewTimeInput] = useState({ date: '', time: '' });
-  const [guid] = useState(() => searchParams.get('id') || generateGuid());
+  const [newTimeInput, setNewTimeInput] = useState({ date: "", time: "" });
+  const [guid] = useState(() => searchParams.get("id") || generateGuid());
   const [showCopied, setShowCopied] = useState(false);
 
   // Add useEffect to load meeting data
   useEffect(() => {
     const loadMeeting = async () => {
       try {
-        console.log('Loading meeting:', guid);
+        console.log("Loading meeting:", guid);
         const response = await fetch(`/api/meeting/${guid}`);
         if (response.ok) {
           const meeting: Meeting = await response.json();
-          console.log('Loaded meeting:', meeting);
+          console.log("Loaded meeting:", meeting);
           setTitle(meeting.title);
           setTimes(meeting.times);
         } else {
-          const errorData = await response.json() as ErrorResponse;
-          console.error('Failed to load meeting:', errorData.error, errorData.details);
+          const errorData = (await response.json()) as ErrorResponse;
+          console.error(
+            "Failed to load meeting:",
+            errorData.error,
+            errorData.details
+          );
         }
       } catch (err) {
-        console.error('Failed to load meeting:', err instanceof Error ? err.message : 'Unknown error');
+        console.error(
+          "Failed to load meeting:",
+          err instanceof Error ? err.message : "Unknown error"
+        );
       }
     };
 
     // Only load if there's an ID in the URL
-    const meetingId = searchParams.get('id');
+    const meetingId = searchParams.get("id");
     if (meetingId) {
       loadMeeting();
     }
@@ -65,42 +72,49 @@ const SimpleScheduler = () => {
     try {
       const meeting: Meeting = {
         title,
-        times
+        times,
       };
-      
+
       // If no ID in URL, it's a new meeting - use POST
       // If there is an ID, it's an existing meeting - use PUT
-      const method = searchParams.get('id') ? 'PUT' : 'POST';
+      const method = searchParams.get("id") ? "PUT" : "POST";
       const response = await fetch(`/api/meeting/${guid}`, {
         method,
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(meeting),
       });
 
       if (!response.ok) {
-        const errorData = await response.json() as ErrorResponse;
-        console.error('Failed to save meeting:', errorData.error, errorData.details);
+        const errorData = (await response.json()) as ErrorResponse;
+        console.error(
+          "Failed to save meeting:",
+          errorData.error,
+          errorData.details
+        );
       }
     } catch (err) {
-      console.error('Failed to save meeting:', err instanceof Error ? err.message : 'Unknown error');
+      console.error(
+        "Failed to save meeting:",
+        err instanceof Error ? err.message : "Unknown error"
+      );
     }
   };
 
   // Modify toggleAvailability to save after state update
   const toggleAvailability = async (timeKey: string) => {
-    setTimes(currentTimes => {
+    setTimes((currentTimes) => {
       const attendees = currentTimes[timeKey] || [];
       const isAttending = attendees.includes(userName);
-      
+
       const newTimes = {
         ...currentTimes,
-        [timeKey]: isAttending 
-          ? attendees.filter(name => name !== userName)
-          : [...attendees, userName]
+        [timeKey]: isAttending
+          ? attendees.filter((name) => name !== userName)
+          : [...attendees, userName],
       };
-      
+
       // Save in a separate useEffect instead
       return newTimes;
     });
@@ -110,22 +124,22 @@ const SimpleScheduler = () => {
   const addNewTime = async () => {
     if (newTimeInput.date && newTimeInput.time) {
       // Convert the date to YYYY-MM-DD format
-      const [year, month, day] = newTimeInput.date.split('-');
+      const [year, month, day] = newTimeInput.date.split("-");
       const timeKey = `${year}-${month}-${day}-${newTimeInput.time}`;
-      setTimes(current => {
+      setTimes((current) => {
         const newTimes = {
           ...current,
-          [timeKey]: [userName] // Add the current user as an attendee
+          [timeKey]: [userName], // Add the current user as an attendee
         };
         return newTimes;
       });
-      setNewTimeInput({ date: '', time: '' });
+      setNewTimeInput({ date: "", time: "" });
     }
   };
 
   // Modify removeTime to save after state update
   const removeTime = async (timeKey: string) => {
-    setTimes(current => {
+    setTimes((current) => {
       const newTimes = { ...current };
       delete newTimes[timeKey];
       return newTimes;
@@ -134,10 +148,11 @@ const SimpleScheduler = () => {
 
   // Add effect to save whenever times or title changes
   useEffect(() => {
-    if (title && !showNamePrompt) {  // Only save if user has entered their name
+    if (title && userName) {
+      // Only save if user has entered their name
       saveMeeting();
     }
-  }, [title, times, showNamePrompt]);
+  }, [title, times, userName]);
 
   const handleShare = async () => {
     const shareUrl = `${window.location.origin}?id=${guid}`;
@@ -146,67 +161,47 @@ const SimpleScheduler = () => {
       setShowCopied(true);
       setTimeout(() => setShowCopied(false), 2000);
     } catch (err) {
-      console.error('Failed to copy:', err);
+      console.error("Failed to copy:", err);
     }
   };
 
   // Group and sort times by date
-  const groupedTimes = Object.entries(times).reduce((groups, [timeKey, attendees]) => {
-    // Split timeKey into its components (YYYY-MM-DD-HH:mm)
-    const [year, month, day] = timeKey.split('-'); // Remove unused 'time' variable
-    // Reconstruct the date in ISO format (YYYY-MM-DD)
-    const date = `${year}-${month}-${day}`;
-    if (!groups[date]) {
-      groups[date] = [];
-    }
-    groups[date].push({ timeKey, attendees });
-    return groups;
-  }, {});
+  const groupedTimes = Object.entries(times).reduce(
+    (groups, [timeKey, attendees]) => {
+      // Split timeKey into its components (YYYY-MM-DD-HH:mm)
+      const [year, month, day] = timeKey.split("-"); // Remove unused 'time' variable
+      // Reconstruct the date in ISO format (YYYY-MM-DD)
+      const date = `${year}-${month}-${day}`;
+      if (!groups[date]) {
+        groups[date] = [];
+      }
+      groups[date].push({ timeKey, attendees });
+      return groups;
+    },
+    {}
+  );
 
   // Sort dates chronologically
-  const sortedDates = Object.keys(groupedTimes).sort((a, b) => 
-    new Date(a).getTime() - new Date(b).getTime()
+  const sortedDates = Object.keys(groupedTimes).sort(
+    (a, b) => new Date(a).getTime() - new Date(b).getTime()
   );
 
   const formatTime = (time: string) => {
-    return new Date(`2000-01-01T${time}`).toLocaleTimeString('en-US', { 
-      hour: 'numeric', 
-      minute: 'numeric'
+    return new Date(`2000-01-01T${time}`).toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "numeric",
     });
   };
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', { 
-      weekday: 'long',
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric'
+    return date.toLocaleDateString("en-US", {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      year: "numeric",
     });
   };
-
-  if (showNamePrompt) {
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-lg p-6 max-w-sm w-full">
-          <h2 className="text-xl font-bold mb-4">Enter your name</h2>
-          <input
-            type="text"
-            value={userName}
-            onChange={(e) => setUserName(e.target.value)}
-            className="w-full p-2 border rounded mb-4"
-            placeholder="Your name"
-          />
-          <button
-            className="w-full py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-            onClick={() => userName.trim() && setShowNamePrompt(false)}
-          >
-            Continue
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="max-w-3xl mx-auto p-4 font-sans">
@@ -220,19 +215,38 @@ const SimpleScheduler = () => {
           className="text-2xl font-bold p-2 w-full border-transparent hover:border-gray-300 focus:border-blue-500 border-2 rounded-lg"
         />
         <div className="flex justify-between items-center text-gray-600 mt-2">
-          <span>Attending as: {userName}</span>
-          <button 
-            onClick={() => setShowNamePrompt(true)}
-            className="text-blue-500 text-sm"
-          >
-            (change name)
-          </button>
+          <div className="flex items-center gap-2">
+            <span>Attending as:</span>
+            {isEditingName ? (
+              <input
+                type="text"
+                value={userName}
+                onChange={(e) => setUserName(e.target.value)}
+                onBlur={() => setIsEditingName(false)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    setIsEditingName(false);
+                  }
+                }}
+                autoFocus
+                className="border rounded px-2 py-1 text-sm"
+                placeholder="Enter your name"
+              />
+            ) : (
+              <button
+                onClick={() => setIsEditingName(true)}
+                className="hover:bg-gray-100 px-2 py-1 rounded"
+              >
+                {userName || "Click to set name"}
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Share Button */}
       <div className="relative mb-6">
-        <button 
+        <button
           onClick={handleShare}
           className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition-colors"
         >
@@ -248,13 +262,11 @@ const SimpleScheduler = () => {
 
       {/* Time Slots Grid - Grouped by Date */}
       <div className="bg-white rounded-lg shadow">
-        {sortedDates.map(date => (
+        {sortedDates.map((date) => (
           <div key={date} className="border-b last:border-b-0">
             {/* Date Header */}
-            <div className="bg-gray-50 p-4 font-medium">
-              {formatDate(date)}
-            </div>
-            
+            <div className="bg-gray-50 p-4 font-medium">{formatDate(date)}</div>
+
             {/* Times for this date */}
             {groupedTimes[date]
               .sort((a, b) => a.timeKey.localeCompare(b.timeKey))
@@ -269,13 +281,13 @@ const SimpleScheduler = () => {
                         <Trash2 className="w-4 h-4" />
                       </button>
                       <span className="font-medium">
-                        {formatTime(timeKey.split('-')[3])}
+                        {formatTime(timeKey.split("-")[3])}
                       </span>
                     </div>
                     <div className="flex items-center gap-4">
                       <div className="flex gap-2">
-                        {attendees.map(name => (
-                          <span 
+                        {attendees.map((name) => (
+                          <span
                             key={name}
                             className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm"
                           >
@@ -283,19 +295,20 @@ const SimpleScheduler = () => {
                           </span>
                         ))}
                       </div>
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={attendees.includes(userName)}
-                          onChange={() => toggleAvailability(timeKey)}
-                          className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        />
-                        <span>I can attend</span>
-                      </label>
+                      <button
+                        onClick={() => toggleAvailability(timeKey)}
+                        className={`px-4 py-2 rounded-lg transition-colors ${
+                          attendees.includes(userName)
+                            ? "bg-red-300 text-red-800 hover:bg-red-600"
+                            : "bg-green-300 text-green-800 hover:bg-green-600"
+                        }`}
+                      >
+                        {attendees.includes(userName) ? "No" : "Yes"}
+                      </button>
                     </div>
                   </div>
                 </div>
-            ))}
+              ))}
           </div>
         ))}
 
@@ -305,13 +318,17 @@ const SimpleScheduler = () => {
             <input
               type="date"
               value={newTimeInput.date}
-              onChange={(e) => setNewTimeInput(prev => ({ ...prev, date: e.target.value }))}
+              onChange={(e) =>
+                setNewTimeInput((prev) => ({ ...prev, date: e.target.value }))
+              }
               className="flex-1 p-2 border rounded"
             />
             <input
               type="time"
               value={newTimeInput.time}
-              onChange={(e) => setNewTimeInput(prev => ({ ...prev, time: e.target.value }))}
+              onChange={(e) =>
+                setNewTimeInput((prev) => ({ ...prev, time: e.target.value }))
+              }
               className="flex-1 p-2 border rounded"
             />
             <button
