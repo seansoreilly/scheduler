@@ -2,7 +2,8 @@
 
 import { Share2, Plus, Trash2 } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
-import { Suspense, useState } from 'react';
+import { Suspense, useState, useEffect } from 'react';
+import { Meeting } from '@/types/meeting';
 
 // Wrap the `SimpleScheduler` component with a Suspense boundary
 export default function App() {
@@ -17,20 +18,126 @@ const generateGuid = () => {
   return crypto.randomUUID();
 };
 
+interface ErrorResponse {
+  error: string;
+  details: string;
+}
+
 const SimpleScheduler = () => {
   const searchParams = useSearchParams();
   const [userName, setUserName] = useState('');
   const [showNamePrompt, setShowNamePrompt] = useState(true);
   const [title, setTitle] = useState("Team Meeting");
-  const [times, setTimes] = useState({
-    "2024-12-10-14:00": ["Alice", "Bob"],
-    "2024-12-10-15:00": ["Alice"],
-    "2024-12-11-14:00": ["Bob"],
-    "2024-12-11-16:00": ["Alice", "Bob"]
-  });
+  const [times, setTimes] = useState<{ [key: string]: string[] }>({});
   const [newTimeInput, setNewTimeInput] = useState({ date: '', time: '' });
   const [guid] = useState(() => searchParams.get('id') || generateGuid());
   const [showCopied, setShowCopied] = useState(false);
+
+  // Add useEffect to load meeting data
+  useEffect(() => {
+    const loadMeeting = async () => {
+      try {
+        console.log('Loading meeting:', guid);
+        const response = await fetch(`/api/meeting/${guid}`);
+        if (response.ok) {
+          const meeting: Meeting = await response.json();
+          console.log('Loaded meeting:', meeting);
+          setTitle(meeting.title);
+          setTimes(meeting.times);
+        } else {
+          const errorData = await response.json() as ErrorResponse;
+          console.error('Failed to load meeting:', errorData.error, errorData.details);
+        }
+      } catch (err) {
+        console.error('Failed to load meeting:', err instanceof Error ? err.message : 'Unknown error');
+      }
+    };
+
+    // Only load if there's an ID in the URL
+    const meetingId = searchParams.get('id');
+    if (meetingId) {
+      loadMeeting();
+    }
+  }, [guid, searchParams]);
+
+  // Add function to save meeting data
+  const saveMeeting = async () => {
+    try {
+      const meeting: Meeting = {
+        title,
+        times
+      };
+      
+      // If no ID in URL, it's a new meeting - use POST
+      // If there is an ID, it's an existing meeting - use PUT
+      const method = searchParams.get('id') ? 'PUT' : 'POST';
+      const response = await fetch(`/api/meeting/${guid}`, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(meeting),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json() as ErrorResponse;
+        console.error('Failed to save meeting:', errorData.error, errorData.details);
+      }
+    } catch (err) {
+      console.error('Failed to save meeting:', err instanceof Error ? err.message : 'Unknown error');
+    }
+  };
+
+  // Modify toggleAvailability to save after state update
+  const toggleAvailability = async (timeKey: string) => {
+    setTimes(currentTimes => {
+      const attendees = currentTimes[timeKey] || [];
+      const isAttending = attendees.includes(userName);
+      
+      const newTimes = {
+        ...currentTimes,
+        [timeKey]: isAttending 
+          ? attendees.filter(name => name !== userName)
+          : [...attendees, userName]
+      };
+      
+      // Save in a separate useEffect instead
+      return newTimes;
+    });
+  };
+
+  // Modify addNewTime to automatically add the current user
+  const addNewTime = async () => {
+    if (newTimeInput.date && newTimeInput.time) {
+      // Convert the date to YYYY-MM-DD format
+      const [year, month, day] = newTimeInput.date.split('-');
+      const timeKey = `${year}-${month}-${day}-${newTimeInput.time}`;
+      setTimes(current => {
+        const newTimes = {
+          ...current,
+          [timeKey]: [userName] // Add the current user as an attendee
+        };
+        return newTimes;
+      });
+      setNewTimeInput({ date: '', time: '' });
+    }
+  };
+
+  // Modify removeTime to save after state update
+  const removeTime = async (timeKey: string) => {
+    setTimes(current => {
+      const newTimes = { ...current };
+      delete newTimes[timeKey];
+      return newTimes;
+    });
+  };
+
+  // Add effect to save whenever times or title changes
+  useEffect(() => {
+    if (title && !showNamePrompt) {  // Only save if user has entered their name
+      saveMeeting();
+    }
+  }, [title, times, showNamePrompt]);
 
   const handleShare = async () => {
     const shareUrl = `${window.location.origin}?id=${guid}`;
@@ -45,7 +152,10 @@ const SimpleScheduler = () => {
 
   // Group and sort times by date
   const groupedTimes = Object.entries(times).reduce((groups, [timeKey, attendees]) => {
-    const [date] = timeKey.split('-');
+    // Split timeKey into its components (YYYY-MM-DD-HH:mm)
+    const [year, month, day] = timeKey.split('-'); // Remove unused 'time' variable
+    // Reconstruct the date in ISO format (YYYY-MM-DD)
+    const date = `${year}-${month}-${day}`;
     if (!groups[date]) {
       groups[date] = [];
     }
@@ -53,46 +163,25 @@ const SimpleScheduler = () => {
     return groups;
   }, {});
 
-  // Sort dates
-  const sortedDates = Object.keys(groupedTimes).sort();
+  // Sort dates chronologically
+  const sortedDates = Object.keys(groupedTimes).sort((a, b) => 
+    new Date(a).getTime() - new Date(b).getTime()
+  );
 
-  const toggleAvailability = (timeKey) => {
-    setTimes(currentTimes => {
-      const attendees = currentTimes[timeKey] || [];
-      const isAttending = attendees.includes(userName);
-      
-      return {
-        ...currentTimes,
-        [timeKey]: isAttending 
-          ? attendees.filter(name => name !== userName)
-          : [...attendees, userName]
-      };
-    });
-  };
-
-  const addNewTime = () => {
-    if (newTimeInput.date && newTimeInput.time) {
-      const timeKey = `${newTimeInput.date}-${newTimeInput.time}`;
-      setTimes(current => ({
-        ...current,
-        [timeKey]: []
-      }));
-      setNewTimeInput({ date: '', time: '' });
-    }
-  };
-
-  const removeTime = (timeKey) => {
-    setTimes(current => {
-      const newTimes = { ...current };
-      delete newTimes[timeKey];
-      return newTimes;
-    });
-  };
-
-  const formatTime = (time) => {
+  const formatTime = (time: string) => {
     return new Date(`2000-01-01T${time}`).toLocaleTimeString('en-US', { 
       hour: 'numeric', 
       minute: 'numeric'
+    });
+  };
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US', { 
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric'
     });
   };
 
@@ -163,11 +252,7 @@ const SimpleScheduler = () => {
           <div key={date} className="border-b last:border-b-0">
             {/* Date Header */}
             <div className="bg-gray-50 p-4 font-medium">
-              {new Date(date).toLocaleDateString('en-US', { 
-                weekday: 'long', 
-                month: 'long', 
-                day: 'numeric' 
-              })}
+              {formatDate(date)}
             </div>
             
             {/* Times for this date */}
