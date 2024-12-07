@@ -38,3 +38,18 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# IDEs
+.idea/
+.vscode/
+
+# temporary files
+*.tmp
+*.swp
+
+# logs
+/logs
+*.log
+
+# Docker
+docker-compose.override.yml
