@@ -27,7 +27,7 @@ const SimpleScheduler = () => {
   const searchParams = useSearchParams();
   const [userName, setUserName] = useState("");
   const [isEditingName, setIsEditingName] = useState(false);
-  const [title, setTitle] = useState("Team Meeting");
+  const [title, setTitle] = useState("Click to set title");
   const [times, setTimes] = useState<{ [key: string]: string[] }>({});
   const [newTimeInput, setNewTimeInput] = useState({ date: "", time: "" });
   const [guid] = useState(() => searchParams.get("id") || generateGuid());
@@ -216,7 +216,7 @@ const SimpleScheduler = () => {
         />
         <div className="flex justify-between items-center text-gray-600 mt-2">
           <div className="flex items-center gap-2">
-            <span>Attending as:</span>
+            <span>My name is:</span>
             {isEditingName ? (
               <input
                 type="text"
@@ -251,7 +251,7 @@ const SimpleScheduler = () => {
           className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition-colors"
         >
           <Share2 className="w-4 h-4" />
-          Share Link
+          Copy link to share with others
         </button>
         {showCopied && (
           <div className="absolute top-full mt-2 left-0 bg-gray-800 text-white px-3 py-1 rounded text-sm">
@@ -295,16 +295,20 @@ const SimpleScheduler = () => {
                           </span>
                         ))}
                       </div>
-                      <button
-                        onClick={() => toggleAvailability(timeKey)}
-                        className={`px-4 py-2 rounded-lg transition-colors ${
-                          attendees.includes(userName)
-                            ? "bg-red-300 text-red-800 hover:bg-red-600"
-                            : "bg-green-300 text-green-800 hover:bg-green-600"
-                        }`}
-                      >
-                        {attendees.includes(userName) ? "No" : "Yes"}
-                      </button>
+                      <label className="inline-flex items-center cursor-pointer">
+                        <div className="relative">
+                          <input
+                            type="checkbox"
+                            className="sr-only peer"
+                            checked={attendees.includes(userName)}
+                            onChange={() => toggleAvailability(timeKey)}
+                          />
+                          <div className="w-11 h-6 bg-red-400 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                        </div>
+                        <span className="ms-3 text-sm font-medium text-gray-900">
+                          {attendees.includes(userName) ? "Could attend" : "Can't attend"}
+                        </span>
+                      </label>
                     </div>
                   </div>
                 </div>
