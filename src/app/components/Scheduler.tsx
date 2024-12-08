@@ -5,23 +5,27 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, useState, useEffect } from "react";
 import { Meeting } from "@/types/meeting";
 
-// Wrap the `SimpleScheduler` component with a Suspense boundary
-export default function App() {
-  return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <SimpleScheduler />
-    </Suspense>
-  );
-}
+// Move formatting functions outside component
+const formatTime = (time: string) => {
+  return new Date(`2000-01-01T${time}`).toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "numeric",
+  });
+};
+
+const formatDate = (dateStr: string) => {
+  const date = new Date(dateStr);
+  return date.toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+};
 
 const generateGuid = () => {
   return crypto.randomUUID();
 };
-
-interface ErrorResponse {
-  error: string;
-  details: string;
-}
 
 const DateTimeWrapper = ({
   value,
@@ -32,7 +36,6 @@ const DateTimeWrapper = ({
 }) => {
   return (
     <div className="relative flex-1">
-      {/* Label for the input field */}
       <label className="block mb-2 text-gray-700 font-medium">
         Enter date and time:
       </label>
@@ -50,32 +53,35 @@ const DateTimeWrapper = ({
 
 const SimpleScheduler = () => {
   const searchParams = useSearchParams();
+  const [isClient, setIsClient] = useState(false);
   const [userName, setUserName] = useState("");
   const [isEditingName, setIsEditingName] = useState(false);
   const [title, setTitle] = useState("Click to set title");
   const [times, setTimes] = useState<{ [key: string]: string[] }>({});
   const [selectedDateTime, setSelectedDateTime] = useState("");
-  const [guid] = useState(() => searchParams.get("id") || generateGuid());
   const [showCopied, setShowCopied] = useState(false);
 
-  // Add useEffect to load meeting data
+  // Safe guid generation that won't cause hydration issues
+  const [guid] = useState(() => {
+    if (typeof window === "undefined") {
+      return searchParams.get("id") || "placeholder-id";
+    }
+    return searchParams.get("id") || generateGuid();
+  });
+
+  // Set client-side flag
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   useEffect(() => {
     const loadMeeting = async () => {
       try {
-        console.log("Loading meeting:", guid);
         const response = await fetch(`/api/meeting/${guid}`);
         if (response.ok) {
           const meeting: Meeting = await response.json();
-          console.log("Loaded meeting:", meeting);
           setTitle(meeting.title);
           setTimes(meeting.times);
-        } else {
-          const errorData = (await response.json()) as ErrorResponse;
-          console.error(
-            "Failed to load meeting:",
-            errorData.error,
-            errorData.details
-          );
         }
       } catch (err) {
         console.error(
@@ -85,12 +91,11 @@ const SimpleScheduler = () => {
       }
     };
 
-    // Only load if there's an ID in the URL
     const meetingId = searchParams.get("id");
-    if (meetingId) {
+    if (meetingId && isClient) {
       loadMeeting();
     }
-  }, [guid, searchParams]);
+  }, [guid, searchParams, isClient]);
 
   // Add function to save meeting data
   const saveMeeting = async () => {
@@ -112,7 +117,7 @@ const SimpleScheduler = () => {
       });
 
       if (!response.ok) {
-        const errorData = (await response.json()) as ErrorResponse;
+        const errorData = await response.json();
         console.error(
           "Failed to save meeting:",
           errorData.error,
@@ -149,10 +154,12 @@ const SimpleScheduler = () => {
     if (selectedDateTime) {
       const date = new Date(selectedDateTime);
       const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      const time = `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
-      
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      const time = `${String(date.getHours()).padStart(2, "0")}:${String(
+        date.getMinutes()
+      ).padStart(2, "0")}`;
+
       const timeKey = `${year}-${month}-${day}-${time}`;
       setTimes((current) => {
         const newTimes = {
@@ -206,7 +213,7 @@ const SimpleScheduler = () => {
       groups[date].push({ timeKey, attendees });
       return groups;
     },
-    {}
+    {} as { [key: string]: { timeKey: string; attendees: string[] }[] }
   );
 
   // Sort dates chronologically
@@ -214,22 +221,10 @@ const SimpleScheduler = () => {
     (a, b) => new Date(a).getTime() - new Date(b).getTime()
   );
 
-  const formatTime = (time: string) => {
-    return new Date(`2000-01-01T${time}`).toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "numeric",
-    });
-  };
-
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString("en-US", {
-      weekday: "long",
-      month: "long",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
+  // Prevent hydration mismatch by returning a loading state
+  if (!isClient) {
+    return <div className="max-w-3xl mx-auto p-4 font-sans">Loading...</div>;
+  }
 
   return (
     <div className="max-w-3xl mx-auto p-4 font-sans">
@@ -270,22 +265,6 @@ const SimpleScheduler = () => {
             )}
           </div>
         </div>
-      </div>
-
-      {/* Share Button */}
-      <div className="relative mb-6">
-        <button
-          onClick={handleShare}
-          className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition-colors"
-        >
-          <Share2 className="w-4 h-4" />
-          Copy link to share with others
-        </button>
-        {showCopied && (
-          <div className="absolute top-full mt-2 left-0 bg-gray-800 text-white px-3 py-1 rounded text-sm">
-            Link copied!
-          </div>
-        )}
       </div>
 
       {/* Time Slots Grid - Grouped by Date */}
@@ -334,7 +313,9 @@ const SimpleScheduler = () => {
                           <div className="w-11 h-6 bg-red-400 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
                         </div>
                         <span className="ms-3 text-sm font-medium text-gray-900">
-                          {attendees.includes(userName) ? "I could attend" : "I can't attend"}
+                          {attendees.includes(userName)
+                            ? "I could attend"
+                            : "I can't attend"}
                         </span>
                       </label>
                     </div>
@@ -361,7 +342,32 @@ const SimpleScheduler = () => {
             </button>
           </div>
         </div>
+
+        {/* Share Button */}
+        <div className="relative mb-6">
+          <button
+            onClick={handleShare}
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition-colors"
+          >
+            <Share2 className="w-4 h-4" />
+            Copy link to share with others
+          </button>
+          {showCopied && (
+            <div className="absolute top-full mt-2 left-0 bg-gray-800 text-white px-3 py-1 rounded text-sm">
+              Link copied!
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
 };
+
+// Wrap the component with Suspense
+export default function App() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <SimpleScheduler />
+    </Suspense>
+  );
+}

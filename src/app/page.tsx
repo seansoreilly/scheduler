@@ -1,9 +1,12 @@
-import SimpleScheduler from './components/Scheduler';
+'use client';
 
-export default function Home() {
-  return (
-    <main>
-      <SimpleScheduler />
-    </main>
-  );
+import dynamic from 'next/dynamic';
+
+const Scheduler = dynamic(() => import('./components/Scheduler'), {
+  ssr: false,
+  loading: () => <div>Loading...</div>,
+});
+
+export default function Page() {
+  return <Scheduler />;
 }
