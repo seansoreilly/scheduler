@@ -325,7 +325,8 @@ const SimpleScheduler = () => {
               onChange={(e) =>
                 setNewTimeInput((prev) => ({ ...prev, date: e.target.value }))
               }
-              className="flex-1 p-2 border rounded"
+              className="flex-1 p-2 border rounded [&:not(:valid)]:text-gray-500 [&:not(:valid)]:font-normal before:content-['Set_date'] before:text-gray-500"
+              placeholder="Set date"
             />
             <input
               type="time"
@@ -333,7 +334,8 @@ const SimpleScheduler = () => {
               onChange={(e) =>
                 setNewTimeInput((prev) => ({ ...prev, time: e.target.value }))
               }
-              className="flex-1 p-2 border rounded"
+              className="flex-1 p-2 border rounded [&:not(:valid)]:text-gray-500 [&:not(:valid)]:font-normal before:content-['Set_time'] before:text-gray-500"
+              placeholder="Set time"
             />
             <button
               onClick={addNewTime}
