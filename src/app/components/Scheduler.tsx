@@ -23,13 +23,38 @@ interface ErrorResponse {
   details: string;
 }
 
+const DateTimeWrapper = ({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}) => {
+  return (
+    <div className="relative flex-1">
+      {/* Label for the input field */}
+      <label className="block mb-2 text-gray-700 font-medium">
+        Enter date and time:
+      </label>
+      <input
+        type="datetime-local"
+        value={value}
+        onChange={onChange}
+        className={`w-full p-2 border rounded bg-white text-black 
+          placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500
+          [&::-webkit-calendar-picker-indicator]:opacity-100`}
+      />
+    </div>
+  );
+};
+
 const SimpleScheduler = () => {
   const searchParams = useSearchParams();
   const [userName, setUserName] = useState("");
   const [isEditingName, setIsEditingName] = useState(false);
   const [title, setTitle] = useState("Click to set title");
   const [times, setTimes] = useState<{ [key: string]: string[] }>({});
-  const [newTimeInput, setNewTimeInput] = useState({ date: "", time: "" });
+  const [selectedDateTime, setSelectedDateTime] = useState("");
   const [guid] = useState(() => searchParams.get("id") || generateGuid());
   const [showCopied, setShowCopied] = useState(false);
 
@@ -120,20 +145,23 @@ const SimpleScheduler = () => {
     });
   };
 
-  // Modify addNewTime to automatically add the current user
   const addNewTime = async () => {
-    if (newTimeInput.date && newTimeInput.time) {
-      // Convert the date to YYYY-MM-DD format
-      const [year, month, day] = newTimeInput.date.split("-");
-      const timeKey = `${year}-${month}-${day}-${newTimeInput.time}`;
+    if (selectedDateTime) {
+      const date = new Date(selectedDateTime);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const time = `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+      
+      const timeKey = `${year}-${month}-${day}-${time}`;
       setTimes((current) => {
         const newTimes = {
           ...current,
-          [timeKey]: [userName], // Add the current user as an attendee
+          [timeKey]: [userName],
         };
         return newTimes;
       });
-      setNewTimeInput({ date: "", time: "" });
+      setSelectedDateTime("");
     }
   };
 
@@ -319,27 +347,13 @@ const SimpleScheduler = () => {
         {/* Add Time Slot */}
         <div className="p-4 border-t">
           <div className="flex gap-4">
-            <input
-              type="date"
-              value={newTimeInput.date}
-              onChange={(e) =>
-                setNewTimeInput((prev) => ({ ...prev, date: e.target.value }))
-              }
-              className="flex-1 p-2 border rounded [&:not(:valid)]:text-gray-500 [&:not(:valid)]:font-normal before:content-['Set_date'] before:text-gray-500"
-              placeholder="Set date"
-            />
-            <input
-              type="time"
-              value={newTimeInput.time}
-              onChange={(e) =>
-                setNewTimeInput((prev) => ({ ...prev, time: e.target.value }))
-              }
-              className="flex-1 p-2 border rounded [&:not(:valid)]:text-gray-500 [&:not(:valid)]:font-normal before:content-['Set_time'] before:text-gray-500"
-              placeholder="Set time"
+            <DateTimeWrapper
+              value={selectedDateTime}
+              onChange={(e) => setSelectedDateTime(e.target.value)}
             />
             <button
               onClick={addNewTime}
-              disabled={!newTimeInput.date || !newTimeInput.time}
+              disabled={!selectedDateTime}
               className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-300"
             >
               <Plus className="w-4 h-4" />
