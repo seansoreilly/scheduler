@@ -1,36 +1,114 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Scheduler
+
+A Next.js based scheduler application for managing and scheduling tasks. Built with modern web technologies and real-time capabilities.
+
+## Features
+
+- Fast and responsive scheduler interface
+- Real-time updates using Redis
+- Built with Next.js 15 and React 19
+- TypeScript for type safety
+- Tailwind CSS for styling
+- Integration with Vercel KV for data persistence
+
+## Tech Stack
+
+- **Framework:** Next.js 15.0.4
+- **Runtime:** React 19
+- **Language:** TypeScript
+- **Styling:** Tailwind CSS
+- **Database:** Redis (via @vercel/kv and ioredis)
+- **UI Components:** Lucide React for icons
+- **Deployment:** Vercel
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
+- Node.js (LTS version recommended)
+- npm or yarn
+- Redis instance (local or cloud)
+
+### Installation
+
+1. Clone the repository
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/seansoreilly/scheduler.git
+cd scheduler
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Install dependencies
+```bash
+npm install
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. Set up environment variables
+```bash
+cp .env.local.example .env.local
+```
+Edit `.env.local` with your configuration values.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+4. Start the development server
+```bash
+npm run dev
+```
 
-## Learn More
+The application will be available at `http://localhost:3000`
 
-To learn more about Next.js, take a look at the following resources:
+### Build for Production
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm run build
+npm start
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Scripts
 
-## Deploy on Vercel
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run start` - Start production server
+- `npm run lint` - Run ESLint
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Project Structure
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+scheduler/
+├── src/
+│   ├── app/            # Next.js 13+ App Router
+│   ├── components/     # Reusable components
+│   ├── lib/           # Utility functions and helpers
+│   └── types/         # TypeScript type definitions
+├── public/            # Static assets
+└── ...config files
+```
+
+## Development
+
+This project uses Next.js with TypeScript. Follow these best practices:
+
+1. Use TypeScript for all new files
+2. Follow the existing component structure
+3. Style components using Tailwind CSS
+4. Keep components small and focused
+5. Use the App Router pattern for routing
+6. Utilize Redis for data persistence
+
+## Environment Variables
+
+Required environment variables:
+
+```env
+# Add required environment variables here
+```
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
