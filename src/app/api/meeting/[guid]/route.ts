@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createMeeting, getMeeting, updateMeeting } from '@/lib/kv';
 import { Meeting } from '@/types/meeting';
+import { Analytics } from '@/lib/analytics';
 
 interface ErrorWithMessage {
   message: string;
@@ -60,6 +61,18 @@ export async function POST(
     console.log('POST request for meeting:', guid, data);
 
     await createMeeting(guid, data);
+    
+    // Track meeting creation
+    await Analytics.trackUserActivity({
+      userId: guid,
+      action: 'create_meeting',
+      timestamp: Date.now(),
+      metadata: {
+        timeSlots: Object.keys(data.times).length,
+        title: data.title
+      }
+    });
+
     return NextResponse.json(data);
   } catch (err: unknown) {
     const error = toErrorWithMessage(err);
@@ -81,6 +94,18 @@ export async function PUT(
     console.log('PUT request for meeting:', guid, data);
 
     await updateMeeting(guid, data);
+
+    // Track meeting update
+    await Analytics.trackUserActivity({
+      userId: guid,
+      action: 'update_meeting',
+      timestamp: Date.now(),
+      metadata: {
+        timeSlots: Object.keys(data.times).length,
+        title: data.title
+      }
+    });
+    
     return NextResponse.json(data);
   } catch (err: unknown) {
     const error = toErrorWithMessage(err);

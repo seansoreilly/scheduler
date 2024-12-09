@@ -229,6 +229,7 @@ const SimpleScheduler = () => {
     if (title && userName) {
       saveMeeting();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [title, times, userName]);
 
   const toggleAvailability = (timeKey: string) => {
