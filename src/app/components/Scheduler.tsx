@@ -311,7 +311,7 @@ const SimpleScheduler = () => {
             onClick={addNewTime}
             disabled={!selectedDateTime}
             className="flex items-center justify-center gap-2 px-6 bg-blue-500 
-              text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-200 
+              text-white rounded-lg hover:bg-blue-600 disabled:bg-blue-500 
               disabled:cursor-not-allowed transition-colors self-end"
           >
             <Plus className="w-4 h-4" />
