@@ -35,7 +35,7 @@ const formatDate = (dateStr: string) => {
 
 const generateGuid = () => crypto.randomUUID();
 
-const groupTimesByDate = (times: Meeting['times']): GroupedTimes => {
+const groupTimesByDate = (times: Meeting["times"]): GroupedTimes => {
   return Object.entries(times).reduce((groups, [timeKey, attendees]) => {
     const [year, month, day] = timeKey.split("-");
     const date = `${year}-${month}-${day}`;
@@ -92,11 +92,15 @@ const ShareButton = ({
           text-blue-600 px-6 py-3 rounded-lg hover:bg-blue-100 transition-colors w-full md:w-auto"
       >
         <Share2 className="w-4 h-4" />
-        <span className="text-sm font-medium">Copy link to share with others</span>
+        <span className="text-sm font-medium">
+          Copy link to share with others
+        </span>
       </button>
       {showCopied && (
-        <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 
-          bg-gray-800 text-white px-4 py-2 rounded-lg text-sm shadow-lg">
+        <div
+          className="absolute -top-12 left-1/2 transform -translate-x-1/2 
+          bg-gray-800 text-white px-4 py-2 rounded-lg text-sm shadow-lg"
+        >
           Link copied!
         </div>
       )}
@@ -120,14 +124,6 @@ const TimeSlotItem = ({
   <div className="p-4 border-t border-gray-100">
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div className="flex items-center gap-3">
-        <button
-          onClick={onRemove}
-          className="text-gray-400 hover:text-red-500 hover:bg-red-50 p-2 rounded-lg
-            transition-colors"
-          aria-label="Remove time slot"
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
         <span className="font-medium text-gray-900">
           {formatTime(timeKey.split("-")[3])}
         </span>
@@ -151,7 +147,8 @@ const TimeSlotItem = ({
               checked={attendees.includes(userName)}
               onChange={onToggle}
             />
-            <div className="w-11 h-6 bg-gray-200 rounded-full peer 
+            <div
+              className="w-11 h-6 bg-red-300 rounded-full peer 
               peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full 
               peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 
               after:start-[2px] after:bg-white after:border-gray-300 after:border 
@@ -163,6 +160,14 @@ const TimeSlotItem = ({
             {attendees.includes(userName) ? "I could attend" : "I can't attend"}
           </span>
         </label>
+        <button
+          onClick={onRemove}
+          className="text-gray-400 hover:text-red-500 hover:bg-red-50 p-2 rounded-lg
+            transition-colors"
+          aria-label="Remove time slot"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
       </div>
     </div>
   </div>
@@ -173,12 +178,12 @@ const SimpleScheduler = () => {
   const [isClient, setIsClient] = useState(false);
   const [userName, setUserName] = useState("");
   const [title, setTitle] = useState("");
-  const [times, setTimes] = useState<Meeting['times']>({});
+  const [times, setTimes] = useState<Meeting["times"]>({});
   const [selectedDateTime, setSelectedDateTime] = useState("");
   const [showCopied, setShowCopied] = useState(false);
   const [guid] = useState(() => {
-    if (typeof window === 'undefined') {
-      return searchParams.get("id") || 'placeholder-id';
+    if (typeof window === "undefined") {
+      return searchParams.get("id") || "placeholder-id";
     }
     return searchParams.get("id") || generateGuid();
   });
@@ -218,7 +223,11 @@ const SimpleScheduler = () => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error("Failed to save meeting:", errorData.error, errorData.details);
+        console.error(
+          "Failed to save meeting:",
+          errorData.error,
+          errorData.details
+        );
       }
     } catch (err) {
       console.error("Failed to save meeting:", err);
@@ -229,7 +238,7 @@ const SimpleScheduler = () => {
     if (title && userName) {
       saveMeeting();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [title, times, userName]);
 
   const toggleAvailability = (timeKey: string) => {
@@ -248,7 +257,7 @@ const SimpleScheduler = () => {
   const addNewTime = () => {
     if (selectedDateTime) {
       const date = new Date(selectedDateTime);
-      const timeKey = date.toISOString().slice(0, 16).replace('T', '-');
+      const timeKey = date.toISOString().slice(0, 16).replace("T", "-");
       setTimes((current) => ({
         ...current,
         [timeKey]: [userName],
@@ -302,7 +311,9 @@ const SimpleScheduler = () => {
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-6">
         <div className="flex gap-4">
           <div className="flex-1">
-            <label className="block text-gray-600 mb-2">Enter date and time:</label>
+            <label className="block text-gray-600 mb-2">
+              Enter date and time:
+            </label>
             <DateTimeInput
               value={selectedDateTime}
               onChange={(e) => setSelectedDateTime(e.target.value)}
@@ -341,7 +352,11 @@ const SimpleScheduler = () => {
         ))}
       </div>
 
-      <ShareButton guid={guid} showCopied={showCopied} setShowCopied={setShowCopied} />
+      <ShareButton
+        guid={guid}
+        showCopied={showCopied}
+        setShowCopied={setShowCopied}
+      />
     </div>
   );
 };
