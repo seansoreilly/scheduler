@@ -12,3 +12,25 @@ body {
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.input-field {
+  @apply w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none;
+}
+
+.button {
+  @apply px-4 py-2 rounded-lg transition-colors duration-200;
+}
+
+.button-primary {
+  @apply button bg-blue-500 text-white hover:bg-blue-600;
+}
+
+.button-secondary {
+  @apply button bg-blue-100 text-blue-500 hover:bg-blue-200;
+}
